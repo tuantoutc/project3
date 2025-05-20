@@ -98,19 +98,30 @@ public class BuildingEntity extends BaseEntity {
 //    )
 //    List<UserEntity> users = new ArrayList<>();
 
-    //lk n-n 1 toa nha nhieu ng quan ly va nhieu toa nha dc 1 ng quan ly
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "building")
-    List<AssignmentBuildingEntity> buildassstaff = new ArrayList<>();
+//    //lk n-n 1 toa nha nhieu ng quan ly va nhieu toa nha dc 1 ng quan ly
+//    @OneToMany(fetch = FetchType.LAZY, mappedBy = "building")
+//    List<AssignmentBuildingEntity> buildassstaff = new ArrayList<>();
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "building")
-    List<RentAreaEntity> rentareas = new ArrayList<>();
+    private List<RentAreaEntity> rentareas = new ArrayList<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "assignmentbuilding",
+    joinColumns = @JoinColumn(name = "buildingid", nullable = false),
+    inverseJoinColumns = @JoinColumn(name = "staffid", nullable = false))
+    private List<UserEntity> staffsAssBuilding = new ArrayList<>();
+
+
+
 
     //getter va setter
 
 
-    public String getNote() {
-        return note;
-    }
+    public List<UserEntity> getStaffsAssBuilding() { return staffsAssBuilding; }
+
+    public void setStaffsAssBuilding(List<UserEntity> staffsAssBuilding) {   this.staffsAssBuilding = staffsAssBuilding;  }
+
+    public String getNote() { return note; }
 
     public void setNote(String note) {
         this.note = note;
@@ -314,14 +325,6 @@ public class BuildingEntity extends BaseEntity {
 
     public void setOvertimeFee(String overtimeFee) {
         this.overtimeFee = overtimeFee;
-    }
-
-    public List<AssignmentBuildingEntity> getBuildassstaff() {
-        return buildassstaff;
-    }
-
-    public void setBuildassstaff(List<AssignmentBuildingEntity> buildassstaff) {
-        this.buildassstaff = buildassstaff;
     }
 
     public List<RentAreaEntity> getRentareas() {
