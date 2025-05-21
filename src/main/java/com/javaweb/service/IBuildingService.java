@@ -15,5 +15,5 @@ public interface IBuildingService {
     void deleteBuilding(List<Long> ids);
     BuildingDTO findById(Long id);
     ResponseDTO loadTypeCode(Long id);
-    ResponseDTO UpdateAssignmentBuilding(AssignmentBuildingDTO assignmentBuildingDTO);
+    ResponseDTO updateAssignmentBuilding(AssignmentBuildingDTO assignmentBuildingDTO);
 }

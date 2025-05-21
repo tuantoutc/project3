@@ -48,10 +48,10 @@ public class BuildingAPI {
 
 
     @PostMapping (value = "/assingment")
-    public void updateAssingmentBuilding(@RequestBody AssignmentBuildingDTO assignmentBuildingDTO)
+    public ResponseDTO updateAssingmentBuilding(@RequestBody AssignmentBuildingDTO assignmentBuildingDTO)
     {
-        buildingService.UpdateAssignmentBuilding(assignmentBuildingDTO);
-        System.out.println("thanh cong");
+       ResponseDTO result =   buildingService.updateAssignmentBuilding(assignmentBuildingDTO);
+        return result;
     }
 
     @GetMapping(value = "/type/{id}")

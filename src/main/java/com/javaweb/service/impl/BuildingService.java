@@ -59,77 +59,78 @@ public class BuildingService implements IBuildingService {
     @Override
     @Transactional
     public ResponseDTO addOrUpdateBuilding(BuildingDTO building) {
+//    my older code
+//        if(building.getId() == null){
+//            BuildingEntity buildingEntity = new BuildingEntity();
+//            buildingEntity.setName(building.getName());
+//            buildingEntity.setNumberOfBasement(building.getNumberOfBasement());
+//            buildingRepository.save(buildingEntity);
+//
+//            BuildingEntity result = buildingRepository.findByNameEquals(building.getName());
+//            building.setId(result.getId());
+//
+//            saveBuilding(result, building);
+//        }
+//        else
+//        {
+//            if(building.getId() != null){
+//                BuildingEntity result = buildingRepository.findById(building.getId()).get();
+//                rentAreaRepository.deleteByBuildingId(building.getId());
+//                saveBuilding(result, building);
+//             }
+//        }
+//        my new code
         BuildingEntity buildingEntity = new BuildingEntity();
-        if(building.getId() == null){
-            buildingEntity.setName(building.getName());
-            buildingEntity.setNumberOfBasement(building.getNumberOfBasement());
-            buildingRepository.save(buildingEntity);
-            BuildingEntity result = buildingRepository.findByNameEquals(building.getName());
-            building.setId(result.getId());
-            result = modelMapper.map(building, BuildingEntity.class);
-            List<RentAreaEntity> rentArea = new ArrayList<>();
-            if(building.getRentArea() != null && !building.getRentArea().equals("")){
-                String [] value = building.getRentArea().split(",");
-                for(String v : value){
-                    RentAreaEntity entity = new RentAreaEntity();
-                    entity.setBuilding(result);
-                    entity.setValue(v);
-                    rentArea.add(entity);
-                    rentAreaRepository.save(entity);
-                }
-            }
-            List<String> type = building.getTypeCode();
-            String typeCode = type.stream().map(i ->i.toString() ).collect(Collectors.joining(","));
-            result.setTypeCode(typeCode);
-            result.setRentareas(rentArea);
-            buildingRepository.save(result);
-        }
+        List<UserEntity> staffs = new ArrayList<>();
         if(building.getId() != null){
-            BuildingEntity result = buildingRepository.findById(building.getId()).get();
-            List<UserEntity> staffs = result.getStaffsAssBuilding();
-            result = modelMapper.map(building, BuildingEntity.class);
-
-            List<RentAreaEntity> rentArea = new ArrayList<>();
-            rentAreaRepository.deleteByBuildingId(building.getId());
-//            assignmentBuildingRespository.deleteByBuildingId(building.getId());
-
-            if(building.getRentArea() != null && !building.getRentArea().equals("")){
-                String [] value = building.getRentArea().split(",");
-                for(String v : value){
-                    RentAreaEntity entity = new RentAreaEntity();
-                    entity.setBuilding(result);
-                    entity.setValue(v);
-                    rentArea.add(entity);
-                    rentAreaRepository.save(entity);
-
-
-                }
-            }
-            List<String> type = building.getTypeCode();
-            String typeCode = type.stream().map(i ->i.toString() ).collect(Collectors.joining(","));
-            result.setTypeCode(typeCode);
-            result.setRentareas(rentArea);
-            result.setStaffsAssBuilding(staffs);
-            buildingRepository.save(result);
+            buildingEntity = buildingRepository.findById(building.getId()).get();
+            staffs = buildingEntity.getStaffsAssBuilding();
         }
+
+        buildingEntity = modelMapper.map(building, BuildingEntity.class);
+        buildingEntity.setStaffsAssBuilding(staffs);
+        saveBuilding(buildingEntity, building);
+
+        BuildingEntity buildingEntity1 = buildingRepository.findByNameEquals(building.getName());
+        building.setId(buildingEntity1.getId());
+
+        rentAreaRepository.deleteByBuildingId(building.getId());
+        addRentArea(building.getRentArea(), buildingEntity1);
+
+        buildingRepository.save(buildingEntity1);
 
         return new ResponseDTO();
+    }
+
+    public void saveBuilding(BuildingEntity result, BuildingDTO building) {
+
+
+
+        List<String> type = building.getTypeCode();
+        String typeCode = type.stream().map(i ->i.toString() ).collect(Collectors.joining(","));
+        result.setTypeCode(typeCode);
+
+
+        buildingRepository.save(result);
+
     }
 
     @Override
     @Transactional
     public void deleteBuilding(List<Long> ids) {
-        for(Long id : ids){
-            if(buildingRepository.existsById(id)){
-                rentAreaRepository.deleteByBuildingId(id);
-                BuildingEntity building = buildingRepository.findById(id).get();
-                buildingRepository.deleteById(id);
-            }
-            else{
-                System.out.println("Khong ton tai building id: "+id+"");
-            }
-
-        }
+//        for(Long id : ids){
+//            if(buildingRepository.existsById(id)){
+//                rentAreaRepository.deleteByBuildingId(id);
+//                BuildingEntity building = buildingRepository.findById(id).get();
+//                buildingRepository.deleteById(id);
+//            }
+//            else{
+//                System.out.println("Khong ton tai building id: "+id+"");
+//            }
+//
+//        }
+        rentAreaRepository.deleteByBuildingIdIn(ids);
+        buildingRepository.deleteByIdIn(ids);
     }
     @Autowired
     private BuildingResponseConverter buildingResponseConverter;
@@ -210,7 +211,7 @@ public class BuildingService implements IBuildingService {
     }
     @Override
     @Transactional
-    public ResponseDTO UpdateAssignmentBuilding(AssignmentBuildingDTO ab) {
+    public ResponseDTO updateAssignmentBuilding(AssignmentBuildingDTO ab) {
 
         BuildingEntity building = buildingRepository.findById(ab.getBuildingId()).get();
         building.setStaffsAssBuilding(null);
@@ -226,5 +227,20 @@ public class BuildingService implements IBuildingService {
 
         }
         return new ResponseDTO();
+    }
+    public void addRentArea(String rentArea, BuildingEntity building) {
+        List<RentAreaEntity> rentAreaForBuild = new ArrayList<>();
+        if(rentArea != null && !rentArea.equals("")){
+            String [] values = rentArea.trim().split(",");
+            for(String v : values){
+
+                RentAreaEntity rentAreaEntity = new RentAreaEntity();
+                rentAreaEntity.setValue( v);
+                rentAreaEntity.setBuilding(building);
+                rentAreaRepository.save(rentAreaEntity);
+                rentAreaForBuild.add(rentAreaEntity);
+            }
+        }
+        building.setRentareas(rentAreaForBuild);
     }
 }

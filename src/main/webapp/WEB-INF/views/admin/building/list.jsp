@@ -467,9 +467,7 @@
                 },
                 error: function (error) {
                     console.info("Giao toa nha khong thanh cong")
-
                     window.location.href = "<c:url value="/admin/building-list?message= error" />";
-
                 }
             });
     }
@@ -504,8 +502,9 @@
                 contentType: "application/json",
                 dataType: "JSON",
                 success: function (response) {
-                    console.log("SUCCESS");
+                    window.location.href = "/admin/building-list";
                     alert("Xoá tòa nhà thành công!");
+
                 },
                 error: function (error) {
                     console.log(error);
