@@ -29,8 +29,8 @@ public class BuildingAPI {
     public ResponseDTO deleteBuilding(@PathVariable List<Long> ids)
     {
     // xuong db de xoa du lieu
-        buildingService.deleteBuilding(ids);
-        ResponseDTO result = new ResponseDTO();
+
+        ResponseDTO result = buildingService.deleteBuilding(ids);
         return result;
     }
     @GetMapping(value = "/{id}/staffs")

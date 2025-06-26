@@ -25,8 +25,7 @@ public class BuildingEntityConverterDTO {
         // Xử lý typeCode để chuyển từ chuỗi sang list
         if(entity.getTypeCode() != null && !entity.getTypeCode().isEmpty()){
             String[] type = entity.getTypeCode().split(",");
-            List<String> listTypeCode = Arrays.stream(type)
-                    .map(String::trim) // Loại bỏ khoảng trắng
+            List<String> listTypeCode = Arrays.stream(type).map(String::trim) // Loại bỏ khoảng trắng
                     .filter(s -> !s.isEmpty()) // Lọc bỏ chuỗi rỗng
                     .collect(Collectors.toList());
             result.setTypeCode(listTypeCode);

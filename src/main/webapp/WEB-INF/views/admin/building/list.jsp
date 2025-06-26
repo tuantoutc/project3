@@ -312,34 +312,47 @@
             <div class="col-sm-12" bis_skin_checked="1">
                 <div bis_skin_checked="1">
                     <ul class="pagination">
-                        <li class="disabled">
-                            <a href="#">
+                        <c:url var="prevUrl" value="/admin/building-list">
+                            <c:param name="pageNo" value="${pageNo > 1 ? pageNo - 1 : 1}" />
+                            <c:param name="pageSize" value="${pageSize}" />
+                            <c:if test="${not empty modelSearch.name}">
+                                <c:param name="name" value="${modelSearch.name}" />
+                            </c:if>
+                            <!-- Thêm các tham số khác từ form tìm kiếm nếu cần -->
+                        </c:url>
+                        
+                        <li class="${pageNo <= 1 ? 'disabled' : ''}">
+                            <a href="${pageNo <= 1 ? '#' : prevUrl}">
                                 <i class="ace-icon fa fa-angle-double-left"></i>
                             </a>
                         </li>
-
-                        <li class="active">
-                            <a href="#">1</a>
-                        </li>
-
-                        <li>
-                            <a href="#">2</a>
-                        </li>
-
-                        <li>
-                            <a href="#">3</a>
-                        </li>
-
-                        <li>
-                            <a href="#">4</a>
-                        </li>
-
-                        <li>
-                            <a href="#">5</a>
-                        </li>
-
-                        <li>
-                            <a href="#">
+                        
+                        <c:forEach begin="1" end="${totalPages > 5 ? 5 : totalPages}" var="i">
+                            <c:url var="pageUrl" value="/admin/building-list">
+                                <c:param name="pageNo" value="${i}" />
+                                <c:param name="pageSize" value="${pageSize}" />
+                                <c:if test="${not empty modelSearch.name}">
+                                    <c:param name="name" value="${modelSearch.name}" />
+                                </c:if>
+                                <!-- Thêm các tham số khác từ form tìm kiếm nếu cần -->
+                            </c:url>
+                            
+                            <li class="${i == pageNo ? 'active' : ''}">
+                                <a href="${pageUrl}">${i}</a>
+                            </li>
+                        </c:forEach>
+                        
+                        <c:url var="nextUrl" value="/admin/building-list">
+                            <c:param name="pageNo" value="${pageNo < totalPages ? pageNo + 1 : totalPages}" />
+                            <c:param name="pageSize" value="${pageSize}" />
+                            <c:if test="${not empty modelSearch.name}">
+                                <c:param name="name" value="${modelSearch.name}" />
+                            </c:if>
+                            <!-- Thêm các tham số khác từ form tìm kiếm nếu cần -->
+                        </c:url>
+                        
+                        <li class="${pageNo >= totalPages ? 'disabled' : ''}">
+                            <a href="${pageNo >= totalPages ? '#' : nextUrl}">
                                 <i class="ace-icon fa fa-angle-double-right"></i>
                             </a>
                         </li>
@@ -512,6 +525,41 @@
                 }
             });
     }
+    
+    // Hàm để thêm tất cả các tham số tìm kiếm vào URL phân trang
+    function addSearchParamsToUrl(url, formData) {
+        var searchParams = new URLSearchParams(formData);
+        
+        // Duyệt qua tất cả các tham số và thêm vào URL
+        for(let pair of searchParams.entries()) {
+            if(pair[1] && pair[1] !== '') {
+                if(url.includes('?')) {
+                    url += '&' + pair[0] + '=' + encodeURIComponent(pair[1]);
+                } else {
+                    url += '?' + pair[0] + '=' + encodeURIComponent(pair[1]);
+                }
+            }
+        }
+        
+        return url;
+    }
+    
+    // Gắn sự kiện click cho các liên kết phân trang để lưu trạng thái tìm kiếm
+    $(document).ready(function() {
+        $('.pagination a').click(function(e) {
+            if($(this).parent().hasClass('disabled')) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Nếu không phải là trang disabled, thêm các tham số tìm kiếm vào URL
+            if($(this).attr('href') !== '#') {
+                var formData = $('#listForm').serialize();
+                var newUrl = addSearchParamsToUrl($(this).attr('href'), formData);
+                $(this).attr('href', newUrl);
+            }
+        });
+    });
 </script>
 
 

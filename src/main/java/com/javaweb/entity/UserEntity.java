@@ -35,17 +35,7 @@ public class UserEntity extends BaseEntity {
     @ManyToMany(mappedBy = "staffsAssBuilding", fetch = FetchType.LAZY)
     private List<BuildingEntity> buildingsAssByStaff = new ArrayList<>();
 
-    //lk n-n 1 toa nha nhieu ng quan ly va nhieu toa nha dc 1 ng quan ly
-//    @OneToMany(fetch = FetchType.LAZY, mappedBy = "staff")
-//    List<AssignmentBuildingEntity> staffassbuild = new ArrayList<>();
-//
-//    public List<AssignmentBuildingEntity> getStaffassbuild() {
-//        return staffassbuild;
-//    }
-//
-//    public void setStaffassbuild(List<AssignmentBuildingEntity> staffassbuild) {
-//        this.staffassbuild = staffassbuild;
-//    }
+// getter and setter
 
     public List<BuildingEntity> getBuildingsAssByStaff() {
         return buildingsAssByStaff;
@@ -55,13 +45,9 @@ public class UserEntity extends BaseEntity {
         this.buildingsAssByStaff = buildingsAssByStaff;
     }
 
-
-// getter and setter
-
     public static long getSerialVersionUID() {
         return serialVersionUID;
     }
-
 
     public String getUserName() {
         return userName;

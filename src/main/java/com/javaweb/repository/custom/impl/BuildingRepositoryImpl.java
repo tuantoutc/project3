@@ -3,6 +3,8 @@ package com.javaweb.repository.custom.impl;
 import com.javaweb.entity.BuildingEntity;
 import com.javaweb.model.dto.BuildingSearchRequest2;
 import com.javaweb.repository.custom.BuildingRepositoryCustom;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.query.JpaCountQueryCreator;
 import org.springframework.stereotype.Repository;
 
 import javax.persistence.EntityManager;
@@ -19,14 +21,22 @@ public class BuildingRepositoryImpl implements BuildingRepositoryCustom {
     @PersistenceContext
     private EntityManager entityManager;
     @Override
-    public List<BuildingEntity> findAll(BuildingSearchRequest2 request) {
+    public List<BuildingEntity> findAll(BuildingSearchRequest2 request, Pageable pageable) {
         StringBuilder sql = new StringBuilder("SELECT b.* FROM building b ");
         StringBuilder where = new StringBuilder(" WHERE 1=1 ");
         queryNomal(request,where);
         querySpecial(request,where);
         sql.append(where);
         sql.append(" GROUP BY b.id");
+        
+        // Thêm phân trang
+        if (pageable != null) {
+            sql.append(" LIMIT ").append(pageable.getPageSize());
+            sql.append(" OFFSET ").append(pageable.getOffset());
+        }
+        
         System.out.println(sql);
+        
         Query query = entityManager.createNativeQuery(sql.toString(), BuildingEntity.class);
         return query.getResultList();
     }

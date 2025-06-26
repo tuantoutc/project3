@@ -13,6 +13,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
@@ -31,15 +32,25 @@ public class BuildingController {
 
 
     @GetMapping(value="/admin/building-list")
-    public ModelAndView buildingList(@ModelAttribute BuildingSearchRequest2 newBuild, HttpServletRequest request) {
+    public ModelAndView buildingList(@ModelAttribute BuildingSearchRequest2 newBuild, HttpServletRequest request,
+                                     @RequestParam(name="pageNo", defaultValue="1") int pageNo,
+                                     @RequestParam(name="pageSize", defaultValue="3") int pageSize) {
         ModelAndView mav = new ModelAndView("admin/building/list");
         mav.addObject("modelSearch", newBuild);
         // xuong db và lấy dự liệu lên
-        List<BuildingSearchResponse> responseList = buildingService.findAll(newBuild);
+        List<BuildingSearchResponse> responseList = buildingService.findAll(newBuild, pageNo, pageSize);
         mav.addObject("buildingList", responseList);
         mav.addObject("listStaffs",userService.getStaffs());
         mav.addObject("districts", District.type());
         mav.addObject("typeCodes", TypeCode.type());
+        
+        // Thêm thông tin phân trang vào model
+        mav.addObject("pageNo", pageNo);
+        mav.addObject("pageSize", pageSize);
+        
+        // Tính tổng số trang (giả định là 10 trang để demo - cần triển khai thêm hàm đếm tổng số item)
+        mav.addObject("totalPages", 10);
+        
         return mav;
     }
     @GetMapping(value="/admin/building-edit")

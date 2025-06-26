@@ -1,7 +1,5 @@
 package com.javaweb.entity;
 
-import com.javaweb.enums.District;
-
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -87,35 +85,17 @@ public class BuildingEntity extends BaseEntity {
     @Column(name="note")
     private String note;
 
-// lk n-n 1 building dc quản lý boi 1 hoac nhieu ng
-//    @OneToMany(fetch = FetchType.LAZY, mappedBy = "building")
-//    List<AssignmentBuildingEntity> assignmentBuildingEntities = new ArrayList<>();
 
-//    @ManyToMany(fetch = FetchType.LAZY)
-//    @JoinTable(name = "assignmentbuilding",
-//            joinColumns = @JoinColumn(name = "buildingid", nullable = false),
-//            inverseJoinColumns = @JoinColumn(name = "staffid", nullable = false)
-//    )
-//    List<UserEntity> users = new ArrayList<>();
-
-//    //lk n-n 1 toa nha nhieu ng quan ly va nhieu toa nha dc 1 ng quan ly
-//    @OneToMany(fetch = FetchType.LAZY, mappedBy = "building")
-//    List<AssignmentBuildingEntity> buildassstaff = new ArrayList<>();
-
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "building")
+    @OneToMany( mappedBy = "building",fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST,CascadeType.MERGE}, orphanRemoval = true )
     private List<RentAreaEntity> rentareas = new ArrayList<>();
-
+// trong many to many ko can thiet dung cascade
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "assignmentbuilding",
     joinColumns = @JoinColumn(name = "buildingid", nullable = false),
     inverseJoinColumns = @JoinColumn(name = "staffid", nullable = false))
     private List<UserEntity> staffsAssBuilding = new ArrayList<>();
 
-
-
-
     //getter va setter
-
 
     public List<UserEntity> getStaffsAssBuilding() { return staffsAssBuilding; }
 

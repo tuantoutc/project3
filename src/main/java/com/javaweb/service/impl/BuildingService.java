@@ -16,11 +16,13 @@ import com.javaweb.model.response.ResponseDTO;
 import com.javaweb.model.response.StaffResponseDTO;
 import com.javaweb.model.response.TypeCodeResponseDTO;
 import com.javaweb.repository.BuildingRepository;
-import com.javaweb.repository.RentAreaRepository;
 import com.javaweb.repository.UserRepository;
 import com.javaweb.service.IBuildingService;
+import org.hibernate.internal.CoreLogging;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,18 +39,15 @@ public class BuildingService implements IBuildingService {
 
     @Autowired
     private UserRepository userRepository;
-
-    @Autowired
-    private RentAreaRepository rentAreaRepository;
-
-
-
+    
     @Autowired
     private ModelMapper modelMapper;
 
     @Autowired
     private BuildingEntityConverterDTO buildingEntityConverterDTO;
 
+    @Autowired
+    private BuildingResponseConverter buildingResponseConverter;
 
     @Override
     public BuildingDTO findById(Long id) {
@@ -59,57 +58,35 @@ public class BuildingService implements IBuildingService {
     @Override
     @Transactional
     public ResponseDTO addOrUpdateBuilding(BuildingDTO building) {
-//    my older code
-//        if(building.getId() == null){
-//            BuildingEntity buildingEntity = new BuildingEntity();
-//            buildingEntity.setName(building.getName());
-//            buildingEntity.setNumberOfBasement(building.getNumberOfBasement());
-//            buildingRepository.save(buildingEntity);
-//
-//            BuildingEntity result = buildingRepository.findByNameEquals(building.getName());
-//            building.setId(result.getId());
-//
-//            saveBuilding(result, building);
-//        }
-//        else
-//        {
-//            if(building.getId() != null){
-//                BuildingEntity result = buildingRepository.findById(building.getId()).get();
-//                rentAreaRepository.deleteByBuildingId(building.getId());
-//                saveBuilding(result, building);
-//             }
-//        }
-//        my new code
         BuildingEntity buildingEntity = new BuildingEntity();
-        List<UserEntity> staffs = new ArrayList<>();
+
         if(building.getId() != null){
             buildingEntity = buildingRepository.findById(building.getId()).get();
-            staffs = buildingEntity.getStaffsAssBuilding();
         }
-
         buildingEntity = modelMapper.map(building, BuildingEntity.class);
-        buildingEntity.setStaffsAssBuilding(staffs);
+        buildingEntity.getRentareas().clear();// xóa hết dữ liệu list rentareas trong buildingEntity
         saveBuilding(buildingEntity, building);
-
-        BuildingEntity buildingEntity1 = buildingRepository.findByNameEquals(building.getName());
-        building.setId(buildingEntity1.getId());
-
-        rentAreaRepository.deleteByBuildingId(building.getId());
-        addRentArea(building.getRentArea(), buildingEntity1);
-
-        buildingRepository.save(buildingEntity1);
 
         return new ResponseDTO();
     }
 
     public void saveBuilding(BuildingEntity result, BuildingDTO building) {
-
-
-
+//      CHUYEN DOI TU TYPECODE  dạng list<String> sang string
         List<String> type = building.getTypeCode();
         String typeCode = type.stream().map(i ->i.toString() ).collect(Collectors.joining(","));
         result.setTypeCode(typeCode);
+//      chuyển đôi từ string rentarea sang các entity rentarea
+        if(building.getRentArea() != null && !building.getRentArea().equals("")){
+            String [] values = building.getRentArea().trim().split(",");
+            for(String v : values){
 
+                RentAreaEntity rentAreaEntity = new RentAreaEntity();
+                rentAreaEntity.setValue( v);
+                rentAreaEntity.setBuilding(result);
+                result.getRentareas().add(rentAreaEntity);// them cac dữ liệu mới của list rentareas vào buildingEntity
+
+            }
+        }
 
         buildingRepository.save(result);
 
@@ -117,23 +94,17 @@ public class BuildingService implements IBuildingService {
 
     @Override
     @Transactional
-    public void deleteBuilding(List<Long> ids) {
-//        for(Long id : ids){
-//            if(buildingRepository.existsById(id)){
-//                rentAreaRepository.deleteByBuildingId(id);
-//                BuildingEntity building = buildingRepository.findById(id).get();
-//                buildingRepository.deleteById(id);
-//            }
-//            else{
-//                System.out.println("Khong ton tai building id: "+id+"");
-//            }
-//
-//        }
-        rentAreaRepository.deleteByBuildingIdIn(ids);
+    public ResponseDTO deleteBuilding(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            ResponseDTO response = new ResponseDTO();
+            response.setMessage("No building ids provided for deletion");
+            return response;
+        }
         buildingRepository.deleteByIdIn(ids);
+        ResponseDTO response = new ResponseDTO();
+        response.setMessage("Buildings deleted successfully");
+        return response;
     }
-    @Autowired
-    private BuildingResponseConverter buildingResponseConverter;
 
     @Override
     public ResponseDTO listStaff(Long buildingId) {
@@ -163,10 +134,15 @@ public class BuildingService implements IBuildingService {
     }
 
     @Override
-    public List<BuildingSearchResponse> findAll(BuildingSearchRequest2 request) {
-        List<BuildingEntity> buildingEntities =buildingRepository.findAll(request);
+    public List<BuildingSearchResponse> findAll(BuildingSearchRequest2 request, int pageNo, int pageSize) {
+        // Tạo đối tượng Pageable với chỉ số trang bắt đầu từ 0 (trừ đi 1 từ pageNo)
+        Pageable pageable = PageRequest.of(pageNo - 1, pageSize);
+        
+        // Gọi repository với đối tượng pageable để lấy dữ liệu đã phân trang
+        List<BuildingEntity> buildingEntities = buildingRepository.findAll(request, pageable);
         List<BuildingSearchResponse> result = new ArrayList<>();
-
+    
+        // Chuyển đổi các đối tượng entity thành response DTO
         for(BuildingEntity item: buildingEntities)
         {
             BuildingSearchResponse building = buildingResponseConverter.toBuildingSearchResponse(item);
@@ -174,6 +150,8 @@ public class BuildingService implements IBuildingService {
         }
         return result;
     }
+
+
     @Override
     public ResponseDTO loadTypeCode(Long id) {
         BuildingEntity building = buildingRepository.findById(id).get();
@@ -214,33 +192,46 @@ public class BuildingService implements IBuildingService {
     public ResponseDTO updateAssignmentBuilding(AssignmentBuildingDTO ab) {
 
         BuildingEntity building = buildingRepository.findById(ab.getBuildingId()).get();
-        building.setStaffsAssBuilding(null);
-        List<Long> listStaffs = ab.getStaffs();
-        List<UserEntity> staffsAssBuilding = new ArrayList<>();
-        if(listStaffs != null && !listStaffs.isEmpty() && !listStaffs.equals("")) {
-            for (Long id : listStaffs) {
-                UserEntity user = userRepository.findById(id).get();
-                staffsAssBuilding.add(user);
-            }
-            building.setStaffsAssBuilding(staffsAssBuilding);
-            buildingRepository.save(building);
+
+        if(ab.getStaffs() != null && !ab.getStaffs().isEmpty() && !ab.getStaffs().equals("")) {
+
+            List<UserEntity> users = userRepository.findAllByIdIn(ab.getStaffs());
+            building.setStaffsAssBuilding(users);// dong này se xóa hết nhân viên cũ và thêm danh sách nhân viên mới trong users
+//            building.getStaffsAssBuilding().addAll(users); // dong code nay se them cac nhan vien mới trong users vao building và giữ nguyên các nhân viên cũ
 
         }
+        buildingRepository.save(building);
+
         return new ResponseDTO();
     }
-    public void addRentArea(String rentArea, BuildingEntity building) {
-        List<RentAreaEntity> rentAreaForBuild = new ArrayList<>();
-        if(rentArea != null && !rentArea.equals("")){
-            String [] values = rentArea.trim().split(",");
-            for(String v : values){
+//    public void addRentArea(String rentArea, BuildingEntity building) {
+//
+//        if(rentArea != null && !rentArea.equals("")){
+//            String [] values = rentArea.trim().split(",");
+//            for(String v : values){
+//
+//                RentAreaEntity rentAreaEntity = new RentAreaEntity();
+//                rentAreaEntity.setValue( v);
+//                rentAreaEntity.setBuilding(building);
+//                building.getRentareas().add(rentAreaEntity);
+//
+//            }
+//        }
+//    }
 
-                RentAreaEntity rentAreaEntity = new RentAreaEntity();
-                rentAreaEntity.setValue( v);
-                rentAreaEntity.setBuilding(building);
-                rentAreaRepository.save(rentAreaEntity);
-                rentAreaForBuild.add(rentAreaEntity);
-            }
-        }
-        building.setRentareas(rentAreaForBuild);
-    }
+//    @Override
+//    public List<BuildingSearchResponse> findAll2(BuildingSearchRequest2 request2, int pageNo, int pageSize) {
+//
+//        Pageable pageable = PageRequest.of(pageNo - 1, pageSize);
+//
+//        Page<BuildingEntity> buildingEntities =buildingRepository.findAll(pageable);
+//        List<BuildingSearchResponse> result = new ArrayList<>();
+//
+//        for(BuildingEntity item: buildingEntities)
+//        {
+//            BuildingSearchResponse building = buildingResponseConverter.toBuildingSearchResponse(item);
+//            result.add(building);
+//        }
+//        return result ;
+//    }
 }
